@@ -23,7 +23,10 @@
     "db:start": "node scripts/start-db.js",
     "db:push": "prisma db push",
     "db:seed": "node scripts/seed.js",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "frontend:dev": "npm --prefix frontend run dev",
+    "frontend:build": "npm --prefix frontend run build",
+    "frontend:preview": "npm --prefix frontend run preview"
   },
   "dependencies": {
     "@nestjs/common": "^12.0.1",

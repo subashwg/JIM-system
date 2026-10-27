@@ -51,13 +51,13 @@ export const AuthScreen: React.FC = () => {
               width: '56px',
               height: '56px',
               borderRadius: '16px',
-              background: 'linear-gradient(135deg, var(--accent-primary) 0%, #059669 100%)',
+              background: 'linear-gradient(135deg, var(--accent-primary) 0%, #aa4f2b 100%)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               margin: '0 auto 1rem',
-              boxShadow: '0 8px 24px rgba(16, 185, 129, 0.45)',
-              color: '#042F20',
+              boxShadow: '0 8px 24px rgba(200, 102, 62, 0.45)',
+              color: '#FFFFFF',
             }}
           >
             <Dumbbell size={30} strokeWidth={2.5} />
@@ -75,8 +75,8 @@ export const AuthScreen: React.FC = () => {
           className="glass-panel"
           style={{
             padding: '1rem',
-            background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.12), rgba(99, 102, 241, 0.12))',
-            border: '1px solid rgba(16, 185, 129, 0.25)',
+            background: 'linear-gradient(135deg, rgba(200, 102, 62, 0.14), rgba(99, 102, 241, 0.1))',
+            border: '1px solid rgba(200, 102, 62, 0.3)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',

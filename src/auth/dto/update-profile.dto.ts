@@ -8,6 +8,11 @@ export class UpdateProfileDto {
   @IsString()
   displayName?: string;
 
+  @ApiPropertyOptional({ description: 'URL or base64 data of profile avatar image' })
+  @IsOptional()
+  @IsString()
+  avatarUrl?: string;
+
   @ApiPropertyOptional({ example: 178.5 })
   @IsOptional()
   @IsNumber()

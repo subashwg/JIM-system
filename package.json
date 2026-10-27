@@ -26,7 +26,8 @@
     "db:studio": "prisma studio",
     "frontend:dev": "npm --prefix frontend run dev",
     "frontend:build": "npm --prefix frontend run build",
-    "frontend:preview": "npm --prefix frontend run preview"
+    "frontend:preview": "npm --prefix frontend run preview",
+    "tunnel": "node scripts/start-tunnel.js"
   },
   "dependencies": {
     "@nestjs/common": "^12.0.1",
@@ -62,6 +63,7 @@
     "@types/supertest": "^7.0.0",
     "@vitest/coverage-v8": "^4.1.2",
     "embedded-postgres": "^18.4.0-beta.17",
+    "localtunnel": "^2.0.2",
     "oxlint": "^1.58.0",
     "prettier": "^3.4.2",
     "prisma": "^6.19.3",

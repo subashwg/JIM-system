@@ -158,6 +158,7 @@ model UserProfile {
   id           String       @id @default(cuid())
   userId       String       @unique
   displayName  String
+  avatarUrl    String?
   height       Float?
   dateOfBirth  DateTime?
   weightUnit   WeightUnit   @default(KG)

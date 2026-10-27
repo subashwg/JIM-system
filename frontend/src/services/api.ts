@@ -2,6 +2,7 @@ import type {
   Exercise,
   PaginatedResult,
   User,
+  UserProfile,
   WorkoutSession,
   WorkoutTemplate,
 } from '../types';
@@ -57,7 +58,9 @@ class ApiService {
       let errorMessage = `Request failed (${response.status})`;
       try {
         const errorData = await response.json();
-        if (Array.isArray(errorData.message)) {
+        if (Array.isArray(errorData.details) && errorData.details.length > 0) {
+          errorMessage = errorData.details.join(', ');
+        } else if (Array.isArray(errorData.message)) {
           errorMessage = errorData.message.join(', ');
         } else if (errorData.message) {
           errorMessage = errorData.message;
@@ -97,6 +100,17 @@ class ApiService {
 
   async getMe(): Promise<User> {
     return this.request<User>('/auth/me');
+  }
+
+  async getProfile(): Promise<UserProfile> {
+    return this.request<UserProfile>('/profile');
+  }
+
+  async updateProfile(data: Partial<UserProfile>): Promise<{ message: string; profile: UserProfile }> {
+    return this.request<{ message: string; profile: UserProfile }>('/profile', {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
   }
 
   // --- Exercises ---

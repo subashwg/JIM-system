@@ -39,6 +39,7 @@ export interface UserProfile {
   id: string;
   userId: string;
   displayName?: string | null;
+  avatarUrl?: string | null;
   height?: number | null;
   dateOfBirth?: string | null;
   weightUnit: WeightUnit;
@@ -75,13 +76,17 @@ export interface Exercise {
 
 export interface WorkoutSet {
   id?: string;
-  orderIndex: number;
+  orderIndex?: number;
+  setNumber?: number;
   setType: SetType;
   weight?: number | null;
   reps?: number | null;
+  completedReps?: number | null;
+  targetReps?: number | null;
   rpe?: number | null;
   isCompleted?: boolean;
   restTimeSeconds?: number | null;
+  restDurationSeconds?: number | null;
   notes?: string | null;
 }
 
@@ -100,7 +105,11 @@ export interface WorkoutSession {
   name: string;
   notes?: string | null;
   startedAt: string;
+  completedAt?: string | null;
   endedAt?: string | null;
+  localDate?: string;
+  workoutType?: string | null;
+  durationSeconds?: number | null;
   status: WorkoutStatus;
   exercises: WorkoutExercise[];
   createdAt: string;

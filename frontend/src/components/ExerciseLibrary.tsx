@@ -2,6 +2,38 @@ import React, { useState, useEffect } from 'react';
 import type { Exercise } from '../types';
 import { api } from '../services/api';
 import { Search, Plus, Dumbbell, X, History, Info } from 'lucide-react';
+import { CustomDropdown } from './common/CustomDropdown';
+
+const EQUIPMENT_OPTIONS = [
+  { value: 'ALL', label: 'All Equipment' },
+  { value: 'BARBELL', label: 'Barbell' },
+  { value: 'DUMBBELL', label: 'Dumbbell' },
+  { value: 'MACHINE', label: 'Machine' },
+  { value: 'CABLE', label: 'Cable' },
+  { value: 'BODYWEIGHT', label: 'Bodyweight' },
+  { value: 'KETTLEBELL', label: 'Kettlebell' },
+  { value: 'BAND', label: 'Band' },
+  { value: 'OTHER', label: 'Other' },
+];
+
+const MOVEMENT_OPTIONS = [
+  { value: 'PUSH', label: 'Push' },
+  { value: 'PULL', label: 'Pull' },
+  { value: 'SQUAT', label: 'Squat' },
+  { value: 'HINGE', label: 'Hinge' },
+  { value: 'LUNGE', label: 'Lunge' },
+  { value: 'ISOLATION', label: 'Isolation' },
+  { value: 'CARRY', label: 'Carry' },
+  { value: 'CARDIO', label: 'Cardio' },
+];
+
+const EXERCISE_TYPE_OPTIONS = [
+  { value: 'STRENGTH', label: 'Strength' },
+  { value: 'BODYWEIGHT', label: 'Bodyweight' },
+  { value: 'ASSISTED', label: 'Assisted' },
+  { value: 'CARDIO', label: 'Cardio' },
+  { value: 'DURATION', label: 'Duration' },
+];
 
 interface ExerciseLibraryProps {
   onSelectForWorkout?: (exercise: Exercise) => void;
@@ -154,9 +186,9 @@ export const ExerciseLibrary: React.FC<ExerciseLibraryProps> = ({
                 style={{
                   fontSize: '0.75rem',
                   padding: '0.3rem 0.75rem',
-                  background: categoryFilter === cat ? 'rgba(16, 185, 129, 0.2)' : 'rgba(255, 255, 255, 0.05)',
+                  background: categoryFilter === cat ? 'rgba(200, 102, 62, 0.2)' : 'rgba(255, 255, 255, 0.05)',
                   color: categoryFilter === cat ? 'var(--accent-primary-light)' : 'var(--text-muted)',
-                  border: categoryFilter === cat ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid transparent',
+                  border: categoryFilter === cat ? '1px solid rgba(200, 102, 62, 0.4)' : '1px solid transparent',
                 }}
               >
                 {cat}
@@ -164,24 +196,14 @@ export const ExerciseLibrary: React.FC<ExerciseLibraryProps> = ({
             ))}
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', minWidth: '180px' }}>
             <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-dim)' }}>EQUIPMENT:</span>
-            <select
+            <CustomDropdown
+              options={EQUIPMENT_OPTIONS}
               value={equipmentFilter}
-              onChange={(e) => setEquipmentFilter(e.target.value)}
-              className="input-field"
-              style={{ width: 'auto', padding: '0.3rem 0.6rem', fontSize: '0.75rem' }}
-            >
-              <option value="ALL">All Equipment</option>
-              <option value="BARBELL">Barbell</option>
-              <option value="DUMBBELL">Dumbbell</option>
-              <option value="MACHINE">Machine</option>
-              <option value="CABLE">Cable</option>
-              <option value="BODYWEIGHT">Bodyweight</option>
-              <option value="KETTLEBELL">Kettlebell</option>
-              <option value="BAND">Band</option>
-              <option value="OTHER">Other</option>
-            </select>
+              onChange={setEquipmentFilter}
+              width="160px"
+            />
           </div>
         </div>
       </div>
@@ -327,62 +349,32 @@ export const ExerciseLibrary: React.FC<ExerciseLibraryProps> = ({
                 />
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '0.75rem' }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.35rem', textTransform: 'uppercase' }}>
-                    Equipment
-                  </label>
-                  <select
+                  <CustomDropdown
+                    label="Equipment"
+                    options={EQUIPMENT_OPTIONS.filter((o) => o.value !== 'ALL')}
                     value={equipmentType}
-                    onChange={(e) => setEquipmentType(e.target.value)}
-                    className="input-field"
-                  >
-                    <option value="BARBELL">Barbell</option>
-                    <option value="DUMBBELL">Dumbbell</option>
-                    <option value="MACHINE">Machine</option>
-                    <option value="CABLE">Cable</option>
-                    <option value="BODYWEIGHT">Bodyweight</option>
-                    <option value="KETTLEBELL">Kettlebell</option>
-                    <option value="BAND">Band</option>
-                    <option value="OTHER">Other</option>
-                  </select>
+                    onChange={setEquipmentType}
+                  />
                 </div>
 
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.35rem', textTransform: 'uppercase' }}>
-                    Movement
-                  </label>
-                  <select
+                  <CustomDropdown
+                    label="Movement"
+                    options={MOVEMENT_OPTIONS}
                     value={movementCategory}
-                    onChange={(e) => setMovementCategory(e.target.value)}
-                    className="input-field"
-                  >
-                    <option value="PUSH">Push</option>
-                    <option value="PULL">Pull</option>
-                    <option value="SQUAT">Squat</option>
-                    <option value="HINGE">Hinge</option>
-                    <option value="LUNGE">Lunge</option>
-                    <option value="ISOLATION">Isolation</option>
-                    <option value="CARRY">Carry</option>
-                    <option value="CARDIO">Cardio</option>
-                  </select>
+                    onChange={setMovementCategory}
+                  />
                 </div>
 
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.35rem', textTransform: 'uppercase' }}>
-                    Type
-                  </label>
-                  <select
+                  <CustomDropdown
+                    label="Type"
+                    options={EXERCISE_TYPE_OPTIONS}
                     value={exerciseType}
-                    onChange={(e) => setExerciseType(e.target.value)}
-                    className="input-field"
-                  >
-                    <option value="STRENGTH">Strength</option>
-                    <option value="BODYWEIGHT">Bodyweight</option>
-                    <option value="ASSISTED">Assisted</option>
-                    <option value="CARDIO">Cardio</option>
-                    <option value="DURATION">Duration</option>
-                  </select>
+                    onChange={setExerciseType}
+                  />
                 </div>
               </div>
 

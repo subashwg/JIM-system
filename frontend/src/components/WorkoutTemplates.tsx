@@ -265,8 +265,8 @@ export const WorkoutTemplates: React.FC<WorkoutTemplatesProps> = ({ onStartFromT
                           padding: '0.5rem 0.75rem',
                           borderRadius: 'var(--radius-sm)',
                           cursor: 'pointer',
-                          background: isSelected ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255, 255, 255, 0.03)',
-                          border: isSelected ? '1px solid rgba(16, 185, 129, 0.35)' : '1px solid transparent',
+                          background: isSelected ? 'rgba(200, 102, 62, 0.18)' : 'rgba(255, 255, 255, 0.03)',
+                          border: isSelected ? '1px solid rgba(200, 102, 62, 0.4)' : '1px solid transparent',
                           transition: 'var(--transition-smooth)',
                         }}
                       >

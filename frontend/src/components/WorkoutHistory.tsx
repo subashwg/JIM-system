@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import type { WorkoutSession } from '../types';
 import { api } from '../services/api';
-import { History, Calendar, Trash2, ChevronDown, ChevronUp, Flame, Play } from 'lucide-react';
+import { History, Calendar, Trash2, ChevronDown, ChevronUp, Flame, Play, Clock } from 'lucide-react';
 
 interface WorkoutHistoryProps {
   onStartNewWorkout: () => void;
@@ -48,11 +48,38 @@ export const WorkoutHistory: React.FC<WorkoutHistoryProps> = ({ onStartNewWorkou
     workout.exercises?.forEach((ex) => {
       ex.sets?.forEach((s) => {
         if (s.isCompleted || s.isCompleted === undefined) {
-          volume += (s.weight || 0) * (s.reps || 0);
+          const reps = s.completedReps ?? s.reps ?? 0;
+          volume += (s.weight || 0) * reps;
         }
       });
     });
     return volume;
+  };
+
+  const formatTime = (isoString?: string | null) => {
+    if (!isoString) return '';
+    try {
+      return new Date(isoString).toLocaleTimeString(undefined, {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true,
+      });
+    } catch {
+      return '';
+    }
+  };
+
+  const formatDate = (isoString: string) => {
+    try {
+      return new Date(isoString).toLocaleDateString(undefined, {
+        weekday: 'short',
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+      });
+    } catch {
+      return isoString;
+    }
   };
 
   const formatDuration = (start: string, end?: string | null) => {
@@ -107,7 +134,7 @@ export const WorkoutHistory: React.FC<WorkoutHistoryProps> = ({ onStartNewWorkou
                 key={w.id}
                 className="glass-panel"
                 style={{
-                  border: isExpanded ? '1px solid rgba(16, 185, 129, 0.35)' : '1px solid var(--border-subtle)',
+                  border: isExpanded ? '1px solid rgba(200, 102, 62, 0.4)' : '1px solid var(--border-subtle)',
                   overflow: 'hidden',
                   transition: 'var(--transition-smooth)',
                 }}
@@ -126,18 +153,17 @@ export const WorkoutHistory: React.FC<WorkoutHistoryProps> = ({ onStartNewWorkou
                   }}
                 >
                   <div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.35rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.35rem', flexWrap: 'wrap' }}>
                       <span className="badge badge-emerald" style={{ fontSize: '0.65rem' }}>
                         {w.status}
                       </span>
                       <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
                         <Calendar size={13} />
-                        {new Date(w.startedAt).toLocaleDateString(undefined, {
-                          weekday: 'short',
-                          month: 'short',
-                          day: 'numeric',
-                          year: 'numeric',
-                        })}
+                        {formatDate(w.startedAt)}
+                      </span>
+                      <span style={{ fontSize: '0.8rem', color: 'var(--accent-primary-light)', display: 'flex', alignItems: 'center', gap: '0.3rem', fontFamily: 'var(--font-mono)' }}>
+                        <Clock size={13} />
+                        {formatTime(w.completedAt || w.startedAt)}
                       </span>
                     </div>
                     <h3 style={{ fontSize: '1.2rem', fontWeight: 800 }}>{w.name}</h3>
@@ -154,8 +180,13 @@ export const WorkoutHistory: React.FC<WorkoutHistoryProps> = ({ onStartNewWorkou
                     <div style={{ textAlign: 'right' }}>
                       <div style={{ fontSize: '0.7rem', color: 'var(--text-dim)', textTransform: 'uppercase', fontWeight: 600 }}>Duration</div>
                       <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 700 }}>
-                        {formatDuration(w.startedAt, w.endedAt)}
+                        {formatDuration(w.startedAt, w.completedAt || w.endedAt)}
                       </div>
+                      {w.completedAt && (
+                        <div style={{ fontSize: '0.7rem', color: 'var(--text-dim)', fontFamily: 'var(--font-mono)' }}>
+                          {formatTime(w.startedAt)} – {formatTime(w.completedAt)}
+                        </div>
+                      )}
                     </div>
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -186,6 +217,23 @@ export const WorkoutHistory: React.FC<WorkoutHistoryProps> = ({ onStartNewWorkou
                       gap: '1rem',
                     }}
                   >
+                    {/* Timestamp metadata bar */}
+                    <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '1.25rem', fontSize: '0.8rem', color: 'var(--text-muted)', paddingBottom: '0.65rem', borderBottom: '1px solid var(--border-subtle)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                        <Clock size={13} color="var(--accent-primary-light)" />
+                        <span>Logged Time: <strong style={{ color: 'var(--text-main)', fontFamily: 'var(--font-mono)' }}>{formatTime(w.completedAt || w.startedAt)}</strong> (Local Time)</span>
+                      </div>
+                      {w.completedAt && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                          <span>Session Window: <strong style={{ color: 'var(--text-main)', fontFamily: 'var(--font-mono)' }}>{formatTime(w.startedAt)} – {formatTime(w.completedAt)}</strong></span>
+                        </div>
+                      )}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                        <Calendar size={13} color="var(--accent-cyan)" />
+                        <span>Calendar Date: <strong style={{ color: 'var(--text-main)' }}>{w.localDate || formatDate(w.startedAt)}</strong></span>
+                      </div>
+                    </div>
+
                     {w.notes && (
                       <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', fontStyle: 'italic' }}>
                         "{w.notes}"
@@ -217,14 +265,14 @@ export const WorkoutHistory: React.FC<WorkoutHistoryProps> = ({ onStartNewWorkou
                               <div
                                 key={sIdx}
                                 style={{
-                                  background: s.isCompleted ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255, 255, 255, 0.05)',
-                                  border: s.isCompleted ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid var(--border-subtle)',
+                                  background: s.isCompleted ? 'rgba(200, 102, 62, 0.16)' : 'rgba(255, 255, 255, 0.05)',
+                                  border: s.isCompleted ? '1px solid rgba(200, 102, 62, 0.35)' : '1px solid var(--border-subtle)',
                                   padding: '0.25rem 0.6rem',
                                   borderRadius: '4px',
                                   color: s.isCompleted ? 'var(--accent-primary-light)' : 'var(--text-muted)',
                                 }}
                               >
-                                Set {sIdx + 1}: {s.weight}kg × {s.reps} {s.rpe ? `@ RPE ${s.rpe}` : ''}
+                                Set {s.setNumber || sIdx + 1}: {s.weight}kg × {s.completedReps ?? s.reps ?? 0} {s.rpe ? `@ RPE ${s.rpe}` : ''}
                               </div>
                             ))}
                           </div>

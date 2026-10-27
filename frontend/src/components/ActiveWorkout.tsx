@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import type { WorkoutExercise, WorkoutSet, Exercise, SetType } from '../types';
 import { api } from '../services/api';
 import { RestTimer } from './RestTimer';
@@ -32,7 +32,6 @@ export const ActiveWorkout: React.FC<ActiveWorkoutProps> = ({
   const [workoutName, setWorkoutName] = useState(initialName);
   const [workoutNotes, setWorkoutNotes] = useState('');
   const [exercises, setExercises] = useState<WorkoutExercise[]>([]);
-  const [startTime] = useState<Date>(new Date());
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
   // Rest Timer state
@@ -43,18 +42,28 @@ export const ActiveWorkout: React.FC<ActiveWorkoutProps> = ({
   const [showExercisePicker, setShowExercisePicker] = useState(false);
   const [isFinishing, setIsFinishing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Helper to format Date into datetime-local input "YYYY-MM-DDTHH:mm" using local timezone
+  const toLocalDatetimeInput = (date: Date) => {
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  };
+
+  const [workoutLocalTime, setWorkoutLocalTime] = useState<string>(() => toLocalDatetimeInput(new Date()));
+
+  const hasInitializedRef = useRef(false);
 
   // Initial populate if started from template or list
   useEffect(() => {
-    if (initialExercises.length > 0) {
+    if (!hasInitializedRef.current && initialExercises.length > 0) {
+      hasInitializedRef.current = true;
       const formatted: WorkoutExercise[] = initialExercises.map((ex, exIdx) => ({
         exerciseId: ex.id,
         orderIndex: exIdx,
         exercise: ex,
         sets: [
-          { orderIndex: 0, setType: 'WORKING', weight: 60, reps: 10, rpe: 8, isCompleted: false },
-          { orderIndex: 1, setType: 'WORKING', weight: 60, reps: 10, rpe: 8, isCompleted: false },
-          { orderIndex: 2, setType: 'WORKING', weight: 60, reps: 10, rpe: 8, isCompleted: false },
+          { orderIndex: 0, setNumber: 1, setType: 'WORKING', weight: 60, reps: 10, completedReps: 10, rpe: 8, isCompleted: false },
+          { orderIndex: 1, setNumber: 2, setType: 'WORKING', weight: 60, reps: 10, completedReps: 10, rpe: 8, isCompleted: false },
+          { orderIndex: 2, setNumber: 3, setType: 'WORKING', weight: 60, reps: 10, completedReps: 10, rpe: 8, isCompleted: false },
         ],
       }));
       setExercises(formatted);
@@ -88,7 +97,7 @@ export const ActiveWorkout: React.FC<ActiveWorkoutProps> = ({
         orderIndex: prev.length,
         exercise,
         sets: [
-          { orderIndex: 0, setType: 'WORKING', weight: 40, reps: 10, rpe: 8, isCompleted: false },
+          { orderIndex: 0, setNumber: 1, setType: 'WORKING', weight: 40, reps: 10, completedReps: 10, rpe: 8, isCompleted: false },
         ],
       },
     ]);
@@ -96,59 +105,92 @@ export const ActiveWorkout: React.FC<ActiveWorkoutProps> = ({
   };
 
   const handleRemoveExercise = (exIndex: number) => {
-    setExercises((prev) => prev.filter((_, idx) => idx !== exIndex));
+    setExercises((prev) =>
+      prev
+        .filter((_, idx) => idx !== exIndex)
+        .map((ex, idx) => ({ ...ex, orderIndex: idx }))
+    );
   };
 
   // Add set to an exercise
   const handleAddSet = (exIndex: number) => {
-    setExercises((prev) => {
-      const copy = [...prev];
-      const target = copy[exIndex];
-      const lastSet = target.sets[target.sets.length - 1];
-      const newSet: WorkoutSet = {
-        orderIndex: target.sets.length,
-        setType: lastSet?.setType || 'WORKING',
-        weight: lastSet?.weight || 40,
-        reps: lastSet?.reps || 10,
-        rpe: lastSet?.rpe || 8,
-        isCompleted: false,
-      };
-      target.sets.push(newSet);
-      return copy;
-    });
+    setExercises((prev) =>
+      prev.map((ex, eIdx) => {
+        if (eIdx !== exIndex) return ex;
+        const lastSet = ex.sets[ex.sets.length - 1];
+        const newSet: WorkoutSet = {
+          orderIndex: ex.sets.length,
+          setNumber: ex.sets.length + 1,
+          setType: lastSet?.setType || 'WORKING',
+          weight: lastSet?.weight !== undefined ? lastSet.weight : 40,
+          reps: lastSet?.reps !== undefined ? lastSet.reps : 10,
+          completedReps: lastSet?.reps !== undefined ? lastSet.reps : 10,
+          rpe: lastSet?.rpe || 8,
+          isCompleted: false,
+        };
+        return {
+          ...ex,
+          sets: [...ex.sets, newSet],
+        };
+      })
+    );
   };
 
   const handleRemoveSet = (exIndex: number, setIndex: number) => {
-    setExercises((prev) => {
-      const copy = [...prev];
-      copy[exIndex].sets = copy[exIndex].sets.filter((_, idx) => idx !== setIndex);
-      return copy;
-    });
+    setExercises((prev) =>
+      prev.map((ex, eIdx) => {
+        if (eIdx !== exIndex) return ex;
+        return {
+          ...ex,
+          sets: ex.sets
+            .filter((_, idx) => idx !== setIndex)
+            .map((s, idx) => ({ ...s, orderIndex: idx, setNumber: idx + 1 })),
+        };
+      })
+    );
   };
 
   const handleUpdateSet = (exIndex: number, setIndex: number, field: keyof WorkoutSet, value: any) => {
-    setExercises((prev) => {
-      const copy = [...prev];
-      const targetSet = copy[exIndex].sets[setIndex];
-      (targetSet as any)[field] = value;
-      return copy;
-    });
+    setExercises((prev) =>
+      prev.map((ex, eIdx) => {
+        if (eIdx !== exIndex) return ex;
+        return {
+          ...ex,
+          sets: ex.sets.map((set, sIdx) => {
+            if (sIdx !== setIndex) return set;
+            return {
+              ...set,
+              [field]: value,
+              ...(field === 'reps' ? { completedReps: value } : {}),
+            };
+          }),
+        };
+      })
+    );
   };
 
   const handleToggleComplete = (exIndex: number, setIndex: number) => {
-    setExercises((prev) => {
-      const copy = [...prev];
-      const targetSet = copy[exIndex].sets[setIndex];
-      const nextState = !targetSet.isCompleted;
-      targetSet.isCompleted = nextState;
-
-      if (nextState) {
-        // Automatically trigger rest timer countdown!
-        setRestDuration(targetSet.setType === 'WARMUP' ? 60 : 90);
-        setShowRestTimer(true);
-      }
-      return copy;
-    });
+    setExercises((prev) =>
+      prev.map((ex, eIdx) => {
+        if (eIdx !== exIndex) return ex;
+        return {
+          ...ex,
+          sets: ex.sets.map((set, sIdx) => {
+            if (sIdx !== setIndex) return set;
+            const nextCompleted = !set.isCompleted;
+            if (nextCompleted) {
+              // Automatically trigger rest timer countdown!
+              setRestDuration(set.setType === 'WARMUP' ? 60 : 90);
+              setShowRestTimer(true);
+            }
+            return {
+              ...set,
+              isCompleted: nextCompleted,
+            };
+          }),
+        };
+      })
+    );
   };
 
   // Calculate live session stats
@@ -161,7 +203,7 @@ export const ActiveWorkout: React.FC<ActiveWorkoutProps> = ({
       totalSets++;
       if (s.isCompleted) {
         completedSetsCount++;
-        totalVolume += (s.weight || 0) * (s.reps || 0);
+        totalVolume += (Number(s.weight) || 0) * (Number(s.completedReps ?? s.reps) || 0);
       }
     });
   });
@@ -175,27 +217,41 @@ export const ActiveWorkout: React.FC<ActiveWorkoutProps> = ({
     setIsFinishing(true);
 
     try {
+      // Determine the exact local timestamp of when the workout was done
+      const completionDate = workoutLocalTime ? new Date(workoutLocalTime) : new Date();
+
+      // Ensure localDate is strictly computed using local calendar year, month, day
+      const pad = (n: number) => String(n).padStart(2, '0');
+      const localDate = `${completionDate.getFullYear()}-${pad(completionDate.getMonth() + 1)}-${pad(completionDate.getDate())}`;
+
+      const completedAt = completionDate.toISOString();
+      const startedAt = new Date(completionDate.getTime() - Math.max(elapsedSeconds, 1) * 1000).toISOString();
+
       await api.createWorkout({
-        name: workoutName,
-        notes: workoutNotes,
-        startedAt: startTime.toISOString(),
-        endedAt: new Date().toISOString(),
+        name: workoutName.trim() || 'Workout Session',
+        notes: workoutNotes.trim() || undefined,
+        startedAt,
+        completedAt,
+        localDate,
+        durationSeconds: elapsedSeconds,
         status: 'COMPLETED',
         exercises: exercises.map((ex, exIdx) => ({
           exerciseId: ex.exerciseId,
           orderIndex: exIdx,
-          notes: ex.notes,
+          notes: ex.notes?.trim() || undefined,
           sets: ex.sets.map((s, sIdx) => ({
-            orderIndex: sIdx,
-            setType: s.setType,
-            weight: Number(s.weight) || 0,
-            reps: Number(s.reps) || 0,
+            setNumber: sIdx + 1,
+            setType: s.setType || 'WORKING',
+            completedReps: Math.max(0, Number(s.completedReps ?? s.reps) || 0),
+            targetReps: s.reps ? Number(s.reps) : undefined,
+            weight: s.weight !== undefined && s.weight !== null ? Number(s.weight) || 0 : 0,
+            weightUnit: 'KG',
             rpe: s.rpe ? Number(s.rpe) : undefined,
-            isCompleted: !!s.isCompleted,
-            restTimeSeconds: s.restTimeSeconds || 90,
+            isCompleted: Boolean(s.isCompleted),
+            restDurationSeconds: s.restDurationSeconds || s.restTimeSeconds || 90,
           })),
         })),
-      });
+      } as any);
 
       // Celebration confetti
       try {
@@ -229,7 +285,7 @@ export const ActiveWorkout: React.FC<ActiveWorkoutProps> = ({
       )}
 
       {/* Header Banner */}
-      <div className="glass-panel" style={{ padding: '1.25rem 1.5rem', border: '1px solid rgba(16, 185, 129, 0.25)' }}>
+      <div className="glass-panel" style={{ padding: '1.25rem 1.5rem', border: '1px solid rgba(200, 102, 62, 0.3)' }}>
         <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '1rem' }}>
           <div style={{ flex: 1, minWidth: '240px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
@@ -272,6 +328,33 @@ export const ActiveWorkout: React.FC<ActiveWorkoutProps> = ({
               }}
               placeholder="Add session notes / training goals..."
             />
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', marginTop: '0.6rem', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>
+                <Clock size={13} color="var(--accent-primary-light)" />
+                <span>Workout Time:</span>
+              </div>
+              <input
+                type="datetime-local"
+                value={workoutLocalTime}
+                onChange={(e) => setWorkoutLocalTime(e.target.value)}
+                title="Local timestamp of when the workout was done"
+                style={{
+                  background: 'rgba(255, 255, 255, 0.06)',
+                  border: '1px solid var(--border-subtle)',
+                  borderRadius: 'var(--radius-sm)',
+                  color: 'var(--accent-primary-light)',
+                  fontSize: '0.775rem',
+                  padding: '0.25rem 0.5rem',
+                  fontFamily: 'var(--font-mono)',
+                  outline: 'none',
+                  cursor: 'pointer',
+                }}
+              />
+              <span style={{ fontSize: '0.7rem', color: 'var(--text-dim)' }}>
+                (Defaults to current local time, adjust if logging past session)
+              </span>
+            </div>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
@@ -360,7 +443,7 @@ export const ActiveWorkout: React.FC<ActiveWorkoutProps> = ({
                       width: '32px',
                       height: '32px',
                       borderRadius: 'var(--radius-sm)',
-                      background: 'rgba(16, 185, 129, 0.15)',
+                      background: 'rgba(200, 102, 62, 0.16)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -407,7 +490,7 @@ export const ActiveWorkout: React.FC<ActiveWorkoutProps> = ({
                         key={sIdx}
                         style={{
                           borderBottom: '1px solid rgba(255, 255, 255, 0.04)',
-                          background: set.isCompleted ? 'rgba(16, 185, 129, 0.08)' : 'transparent',
+                          background: set.isCompleted ? 'rgba(200, 102, 62, 0.1)' : 'transparent',
                           transition: 'var(--transition-smooth)',
                         }}
                       >
@@ -422,12 +505,13 @@ export const ActiveWorkout: React.FC<ActiveWorkoutProps> = ({
                             value={set.setType}
                             onChange={(e) => handleUpdateSet(exIdx, sIdx, 'setType', e.target.value as SetType)}
                             style={{
-                              background: 'rgba(255, 255, 255, 0.06)',
-                              border: '1px solid var(--border-subtle)',
-                              borderRadius: '4px',
-                              color: 'var(--text-main)',
+                              background: 'rgba(15, 23, 42, 0.9)',
+                              border: '1px solid rgba(200, 102, 62, 0.35)',
+                              borderRadius: 'var(--radius-sm)',
+                              color: 'var(--accent-primary-light)',
+                              fontWeight: 700,
                               fontSize: '0.725rem',
-                              padding: '0.25rem 0.4rem',
+                              padding: '0.3rem 0.5rem',
                               cursor: 'pointer',
                             }}
                           >
@@ -482,22 +566,24 @@ export const ActiveWorkout: React.FC<ActiveWorkoutProps> = ({
                         <td style={{ padding: '0.5rem 0.4rem', textAlign: 'center' }}>
                           <button
                             type="button"
+                            aria-label={`Mark set ${sIdx + 1} as ${set.isCompleted ? 'incomplete' : 'complete'}`}
                             onClick={() => handleToggleComplete(exIdx, sIdx)}
                             style={{
-                              width: '28px',
-                              height: '28px',
+                              width: '30px',
+                              height: '30px',
                               borderRadius: '6px',
-                              border: set.isCompleted ? 'none' : '2px solid rgba(255, 255, 255, 0.2)',
-                              background: set.isCompleted ? 'var(--accent-primary)' : 'transparent',
-                              color: set.isCompleted ? '#042F20' : 'transparent',
+                              border: set.isCompleted ? 'none' : '2px solid rgba(255, 255, 255, 0.28)',
+                              background: set.isCompleted ? 'var(--accent-primary)' : 'rgba(255, 255, 255, 0.04)',
+                              color: set.isCompleted ? '#FFFFFF' : 'transparent',
                               display: 'inline-flex',
                               alignItems: 'center',
                               justifyContent: 'center',
                               cursor: 'pointer',
-                              transition: 'var(--transition-smooth)',
+                              transition: 'all 0.15s ease-in-out',
+                              boxShadow: set.isCompleted ? '0 0 10px rgba(200, 102, 62, 0.5)' : 'none',
                             }}
                           >
-                            <Check size={16} strokeWidth={3} />
+                            <Check size={18} strokeWidth={3} />
                           </button>
                         </td>
 

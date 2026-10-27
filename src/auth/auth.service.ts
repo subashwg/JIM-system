@@ -127,6 +127,7 @@ export class AuthService {
       where: { userId },
       data: {
         ...(dto.displayName !== undefined ? { displayName: dto.displayName.trim() } : {}),
+        ...(dto.avatarUrl !== undefined ? { avatarUrl: dto.avatarUrl } : {}),
         ...(dto.height !== undefined ? { height: dto.height } : {}),
         ...(dto.dateOfBirth !== undefined ? { dateOfBirth: new Date(dto.dateOfBirth) } : {}),
         ...(dto.weightUnit !== undefined ? { weightUnit: dto.weightUnit } : {}),

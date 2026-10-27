@@ -61,7 +61,7 @@ export const RestTimer: React.FC<RestTimerProps> = ({ initialSeconds = 90, onClo
             width: '38px',
             height: '38px',
             borderRadius: '50%',
-            background: secondsLeft === 0 ? 'var(--accent-rose-bg)' : 'rgba(16, 185, 129, 0.2)',
+            background: secondsLeft === 0 ? 'var(--accent-rose-bg)' : 'rgba(200, 102, 62, 0.22)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
